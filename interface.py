@@ -23,11 +23,13 @@ class StudyApp:
 
         self.criar_layout()
         self.atualizar()
+        self.atualizar_historico()
 
     # ================= LAYOUT ================= #
 
     def criar_layout(self):
 
+        # ===== SIDEBAR =====
         self.sidebar = ctk.CTkFrame(
             self.root,
             width=280,
@@ -84,9 +86,8 @@ class StudyApp:
             fg_color="#7F1D1D",
             hover_color="#991B1B",
             command=self.resetar_horas
-        ).pack(padx=25, pady=(5, 5), fill="x")
+        ).pack(padx=25, pady=5, fill="x")
 
-        # ===== BOTÃO FINALIZAR CICLO =====
         ctk.CTkButton(
             self.sidebar,
             text="🏁 Finalizar Ciclo",
@@ -117,14 +118,43 @@ class StudyApp:
         self.frame_grafico = ctk.CTkFrame(self.sidebar, fg_color="#0F172A")
         self.frame_grafico.pack(padx=10, pady=10, fill="both")
 
+        # ===== MAIN =====
         self.main = ctk.CTkFrame(self.root, fg_color="#0B1120")
         self.main.pack(side="right", fill="both", expand=True)
 
-        self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20, fg_color="#0F172A")
+        # ===== TABVIEW =====
+        self.tabview = ctk.CTkTabview(
+            self.main,
+            fg_color="#0B1120", 
+            segmented_button_fg_color="#0F172A",
+            segmented_button_selected_color="#2563EB",
+            segmented_button_unselected_color="#1E293B"                      
+        )
+        self.tabview.pack(fill="both", expand=True, padx=20, pady=20)
+
+        self.tab_dashboard = self.tabview.add("Dashboard")
+        self.tab_historico = self.tabview.add("Histórico")
+
+        # ===== DASHBOARD =====
+        self.kpi_frame = ctk.CTkFrame(self.tab_dashboard, corner_radius=20, fg_color="#0F172A")
         self.kpi_frame.pack(fill="x", padx=30, pady=(30, 20))
 
-        self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20, fg_color="#0F172A")
+        self.cards_container = ctk.CTkScrollableFrame(
+            self.tab_dashboard,
+            corner_radius=20,
+            fg_color="#0F172A"
+        )
         self.cards_container.pack(fill="both", expand=True, padx=30, pady=(0, 30))
+
+        # ===== HISTÓRICO =====
+        self.frame_cards_historico = ctk.CTkFrame(self.tab_historico, corner_radius=20, fg_color="#0F172A")
+        self.frame_cards_historico.pack(fill="x", padx=30, pady=(30, 20))
+
+        self.frame_barra = ctk.CTkFrame(self.tab_historico, corner_radius=20, fg_color="#0F172A")
+        self.frame_barra.pack(fill="both", padx=30, pady=10)
+
+        self.frame_linha = ctk.CTkFrame(self.tab_historico, corner_radius=20, fg_color="#0F172A")
+        self.frame_linha.pack(fill="both", expand=True, padx=30, pady=(10, 30))
 
     # ================= VALIDAÇÃO ================= #
 
@@ -189,6 +219,7 @@ class StudyApp:
                 self.model.finalizar_ciclo()
                 messagebox.showinfo("Ciclo Finalizado", "Ciclo salvo no histórico com sucesso!")
                 self.atualizar()
+                self.atualizar_historico()
             except Exception as e:
                 messagebox.showerror("Erro", str(e))
 
@@ -330,6 +361,72 @@ class StudyApp:
         ctk.CTkLabel(card, text=valor, font=("Arial", 28, "bold")).pack(pady=(20, 5))
         ctk.CTkLabel(card, text=titulo, font=("Arial", 14)).pack()
         ctk.CTkLabel(card, text=subtitulo, font=("Arial", 12), text_color="gray").pack(pady=(0, 15))
+
+    # ================= HISTÓRICO ================= #
+
+    def atualizar_historico(self):
+
+        for widget in self.frame_cards_historico.winfo_children():
+            widget.destroy()
+
+        for widget in self.frame_barra.winfo_children():
+            widget.destroy()
+
+        for widget in self.frame_linha.winfo_children():
+            widget.destroy()
+
+        ciclos = self.model.obter_historico()
+
+        if not ciclos:
+            ctk.CTkLabel(
+                self.frame_barra,
+                text="📊 Você ainda não finalizou nenhum ciclo.\nFinalize seu primeiro ciclo para visualizar sua evolução!",
+                font=("Arial", 16)
+            ).pack(pady=40)
+            return
+
+        percentuais = [c["percentual"] for c in ciclos]
+        total_ciclos = len(percentuais)
+        media = sum(percentuais) / total_ciclos
+        melhor = max(percentuais)
+        ultimo = percentuais[0]
+
+        self.criar_kpi_card(self.frame_cards_historico, "Total Ciclos", total_ciclos, "Ciclos finalizados")
+        self.criar_kpi_card(self.frame_cards_historico, "Média Geral", f"{int(media)}%", "Desempenho médio")
+        self.criar_kpi_card(self.frame_cards_historico, "Melhor Ciclo", f"{int(melhor)}%", "Maior percentual")
+        self.criar_kpi_card(self.frame_cards_historico, "Último Ciclo", f"{int(ultimo)}%", "Ciclo mais recente")
+
+        fig_bar = plt.Figure(figsize=(8, 4), facecolor="#0F172A")
+        ax_bar = fig_bar.add_subplot(111)
+        ax_bar.set_facecolor("#0F172A")
+
+        labels = [f"C{len(percentuais)-i}" for i in range(len(percentuais))]
+        ax_bar.bar(labels, percentuais)
+
+        ax_bar.set_title("Comparação entre Ciclos", color="white")
+        ax_bar.tick_params(colors="white")
+        ax_bar.set_ylabel("Percentual (%)", color="white")
+
+        canvas_bar = FigureCanvasTkAgg(fig_bar, self.frame_barra)
+        canvas_bar.draw()
+        canvas_bar.get_tk_widget().pack()
+
+        percentuais_ordenados = list(reversed(percentuais))
+
+        fig_line = plt.Figure(figsize=(8, 4), facecolor="#0F172A")
+        ax_line = fig_line.add_subplot(111)
+        ax_line.set_facecolor("#0F172A")
+
+        ax_line.plot(range(1, len(percentuais_ordenados)+1), percentuais_ordenados, marker="o")
+
+        ax_line.set_title("Evolução de Desempenho", color="white")
+        ax_line.tick_params(colors="white")
+        ax_line.set_ylabel("Percentual (%)", color="white")
+        ax_line.set_xlabel("Ciclo", color="white")
+
+        canvas_line = FigureCanvasTkAgg(fig_line, self.frame_linha)
+        canvas_line.draw()
+        canvas_line.get_tk_widget().pack()
 
     # ================= PDF ================= #
 
