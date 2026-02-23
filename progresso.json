@@ -1,0 +1,27 @@
+{
+    "calculo": {
+        "peso": 4.0,
+        "meta": 14,
+        "concluido": 4
+    },
+    "fisica": {
+        "peso": 4.0,
+        "meta": 14,
+        "concluido": 2
+    },
+    "mineralogia": {
+        "peso": 1.0,
+        "meta": 4,
+        "concluido": 4
+    },
+    "quimica inorganica industrial": {
+        "peso": 2.0,
+        "meta": 7,
+        "concluido": 2
+    },
+    "gest\u00e3o ambiental": {
+        "peso": 1.0,
+        "meta": 4,
+        "concluido": 2
+    }
+}
