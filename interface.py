@@ -28,7 +28,6 @@ class StudyApp:
 
     def criar_layout(self):
 
-        # ===== SIDEBAR ===== #
         self.sidebar = ctk.CTkFrame(
             self.root,
             width=280,
@@ -50,14 +49,6 @@ class StudyApp:
             font=("Arial", 12),
             text_color="#94A3B8"
         ).pack(pady=(0, 20))
-
-        # -------- PLANEJAMENTO -------- #
-        ctk.CTkLabel(
-            self.sidebar,
-            text="PLANEJAMENTO",
-            font=("Arial", 11, "bold"),
-            text_color="#64748B"
-        ).pack(anchor="w", padx=25, pady=(15, 5))
 
         self.entry_horas = ctk.CTkEntry(self.sidebar, placeholder_text="Horas por dia", height=40)
         self.entry_horas.pack(padx=25, pady=5, fill="x")
@@ -86,7 +77,6 @@ class StudyApp:
             command=self.calcular
         ).pack(padx=25, pady=5, fill="x")
 
-        # RESET HORAS
         ctk.CTkButton(
             self.sidebar,
             text="🔄 Resetar Horas",
@@ -94,9 +84,17 @@ class StudyApp:
             fg_color="#7F1D1D",
             hover_color="#991B1B",
             command=self.resetar_horas
-        ).pack(padx=25, pady=(5, 15), fill="x")
+        ).pack(padx=25, pady=(5, 5), fill="x")
 
-        # -------- RELATÓRIO -------- #
+        ctk.CTkButton(
+            self.sidebar,
+            text="❌ Excluir Todas",
+            height=40,
+            fg_color="#B91C1C",
+            hover_color="#991B1B",
+            command=self.excluir_todas
+        ).pack(padx=25, pady=(0, 15), fill="x")
+
         ctk.CTkButton(
             self.sidebar,
             text="📄 Exportar PDF",
@@ -106,21 +104,12 @@ class StudyApp:
             command=self.exportar_pdf
         ).pack(padx=25, pady=(0, 20), fill="x")
 
-        # ===== DONUT ===== #
         self.frame_grafico = ctk.CTkFrame(
             self.sidebar,
             fg_color="#0F172A"
         )
         self.frame_grafico.pack(padx=10, pady=10, fill="both")
 
-        ctk.CTkLabel(
-            self.sidebar,
-            text="v2.0 Sólido",
-            font=("Arial", 10),
-            text_color="#475569"
-        ).pack(side="bottom", pady=10)
-
-        # ===== MAIN ===== #
         self.main = ctk.CTkFrame(self.root, fg_color="#0B1120")
         self.main.pack(side="right", fill="both", expand=True)
 
@@ -130,7 +119,7 @@ class StudyApp:
         self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20, fg_color="#0F172A")
         self.cards_container.pack(fill="both", expand=True, padx=30, pady=(0, 30))
 
-    # ================= VALIDAÇÕES ================= #
+    # ================= VALIDAÇÃO ================= #
 
     def validar_numero(self, valor, campo):
         try:
@@ -171,17 +160,34 @@ class StudyApp:
         self.model.calcular_metas()
         self.atualizar()
 
-    # 🔥 NOVO RESET (zera apenas horas concluídas)
     def resetar_horas(self):
         confirmar = messagebox.askyesno(
             "Confirmar Reset",
-            "Tem certeza que deseja resetar todas as horas concluídas?"
+            "Deseja realmente zerar todas as horas concluídas?"
         )
 
         if confirmar:
-            for nome in self.model.disciplinas:
-                self.model.disciplinas[nome]["concluido"] = 0
+            self.model.resetar_horas()
+            self.atualizar()
 
+    def excluir_disciplina(self, nome):
+        confirmar = messagebox.askyesno(
+            "Excluir Disciplina",
+            f"Deseja excluir a disciplina '{nome}'?"
+        )
+
+        if confirmar:
+            self.model.deletar_disciplina(nome)
+            self.atualizar()
+
+    def excluir_todas(self):
+        confirmar = messagebox.askyesno(
+            "Excluir Todas",
+            "Deseja excluir TODAS as disciplinas?"
+        )
+
+        if confirmar:
+            self.model.deletar_todas()
             self.atualizar()
 
     def marcar_hora_card(self, nome):
@@ -198,12 +204,10 @@ class StudyApp:
         for widget in self.cards_container.winfo_children():
             widget.destroy()
 
+        percentual_total = self.model.progresso_total()
+
         total_meta = sum(d["meta"] for d in self.model.disciplinas.values())
         total_concluido = sum(d["concluido"] for d in self.model.disciplinas.values())
-
-        percentual_total = 0
-        if total_meta > 0:
-            percentual_total = (total_concluido / total_meta) * 100
 
         self.criar_kpi_card(self.kpi_frame, "Horas Totais", f"{total_concluido}h", f"Meta: {total_meta}h")
         self.criar_kpi_card(self.kpi_frame, "Progresso Geral", f"{int(percentual_total)}%", "Desempenho geral")
@@ -222,10 +226,23 @@ class StudyApp:
             )
             card.pack(fill="x", padx=20, pady=10)
 
-            ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold")).pack(anchor="w", padx=20, pady=(15, 5))
+            top_frame = ctk.CTkFrame(card, fg_color="transparent")
+            top_frame.pack(fill="x", padx=10, pady=(10, 0))
+
+            ctk.CTkLabel(top_frame, text=nome, font=("Arial", 18, "bold")).pack(side="left")
+
+            ctk.CTkButton(
+                top_frame,
+                text="✕",
+                width=35,
+                height=28,
+                fg_color="#B91C1C",
+                hover_color="#991B1B",
+                command=lambda n=nome: self.excluir_disciplina(n)
+            ).pack(side="right")
 
             barra = ctk.CTkProgressBar(card, height=15)
-            barra.pack(fill="x", padx=20, pady=5)
+            barra.pack(fill="x", padx=20, pady=10)
             barra.set(progresso / 100 if dados["meta"] > 0 else 0)
 
             ctk.CTkLabel(
@@ -251,14 +268,16 @@ class StudyApp:
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
 
-        if percentual <= 25:
+        if percentual == 100:
+            cor = "#38BDF8"  # azul claro
+        elif percentual <= 25:
             cor = "#DC2626"
         elif percentual <= 50:
             cor = "#FACC15"
         else:
             cor = "#16A34A"
 
-        restante = 100 - percentual
+        restante = max(0, 100 - percentual)
 
         fig = plt.Figure(figsize=(3, 3), facecolor="#0F172A")
         ax = fig.add_subplot(111)
