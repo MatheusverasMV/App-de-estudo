@@ -86,6 +86,16 @@ class StudyApp:
             command=self.resetar_horas
         ).pack(padx=25, pady=(5, 5), fill="x")
 
+        # ===== BOTÃO FINALIZAR CICLO =====
+        ctk.CTkButton(
+            self.sidebar,
+            text="🏁 Finalizar Ciclo",
+            height=40,
+            fg_color="#059669",
+            hover_color="#047857",
+            command=self.finalizar_ciclo
+        ).pack(padx=25, pady=5, fill="x")
+
         ctk.CTkButton(
             self.sidebar,
             text="❌ Excluir Todas",
@@ -104,10 +114,7 @@ class StudyApp:
             command=self.exportar_pdf
         ).pack(padx=25, pady=(0, 20), fill="x")
 
-        self.frame_grafico = ctk.CTkFrame(
-            self.sidebar,
-            fg_color="#0F172A"
-        )
+        self.frame_grafico = ctk.CTkFrame(self.sidebar, fg_color="#0F172A")
         self.frame_grafico.pack(padx=10, pady=10, fill="both")
 
         self.main = ctk.CTkFrame(self.root, fg_color="#0B1120")
@@ -169,6 +176,21 @@ class StudyApp:
         if confirmar:
             self.model.resetar_horas()
             self.atualizar()
+
+    def finalizar_ciclo(self):
+        confirmar = messagebox.askyesno(
+            "Finalizar Ciclo",
+            "Deseja finalizar o ciclo atual?\n\n"
+            "Isso irá salvar o histórico e zerar as horas concluídas."
+        )
+
+        if confirmar:
+            try:
+                self.model.finalizar_ciclo()
+                messagebox.showinfo("Ciclo Finalizado", "Ciclo salvo no histórico com sucesso!")
+                self.atualizar()
+            except Exception as e:
+                messagebox.showerror("Erro", str(e))
 
     def excluir_disciplina(self, nome):
         confirmar = messagebox.askyesno(
@@ -269,7 +291,7 @@ class StudyApp:
             widget.destroy()
 
         if percentual == 100:
-            cor = "#38BDF8"  # azul claro
+            cor = "#38BDF8"
         elif percentual <= 25:
             cor = "#DC2626"
         elif percentual <= 50:
