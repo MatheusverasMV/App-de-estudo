@@ -1,93 +1,93 @@
-import math
-import database
+from database import Database
 
 
 class StudyModel:
 
     def __init__(self):
-        # Garante que a tabela exista
-        database.criar_tabela()
+        self.db = Database()
+        self.disciplinas = self.db.carregar_disciplinas()
+        self.horas_dia = self.db.carregar_horas_dia()
 
-        # Carrega dados salvos do banco
-        self.disciplinas = database.carregar_disciplinas()
-        self.horas_dia = 0
-
-    # ---------------- CONFIGURAÇÃO ---------------- #
-
-    def definir_horas_dia(self, horas):
-        self.horas_dia = float(horas)
-
-    # ---------------- DISCIPLINAS ---------------- #
+    # ================= DISCIPLINAS ================= #
 
     def adicionar_disciplina(self, nome, peso):
-        peso = float(peso)
+        if nome in self.disciplinas:
+            return
 
+        self.db.inserir_disciplina(nome, peso)
+        self.disciplinas[nome] = {
+            "peso": peso,
+            "meta": 0,
+            "concluido": 0
+        }
+
+    def deletar_disciplina(self, nome):
         if nome not in self.disciplinas:
-            self.disciplinas[nome] = {
-                "peso": peso,
-                "meta": 0,
-                "concluido": 0
-            }
+            return
 
-            database.inserir_disciplina(nome, peso)
+        self.db.deletar_disciplina(nome)
+        del self.disciplinas[nome]
 
-    # ---------------- CÁLCULO DE METAS ---------------- #
+    def deletar_todas(self):
+        self.db.deletar_todas()
+        self.disciplinas.clear()
+
+    # ================= CONFIG ================= #
+
+    def definir_horas_dia(self, horas):
+        self.horas_dia = horas
+        self.db.salvar_horas_dia(horas)
+
+    # ================= METAS ================= #
 
     def calcular_metas(self):
-        horas_semana = self.horas_dia * 7
+        total_peso = sum(d["peso"] for d in self.disciplinas.values())
 
-        soma_pesos = sum(d["peso"] for d in self.disciplinas.values())
-
-        # 🔥 Evita divisão por zero (corrige erro do gráfico também)
-        if soma_pesos == 0:
+        if total_peso == 0:
             return
 
         for nome, dados in self.disciplinas.items():
-            meta = (dados["peso"] / soma_pesos) * horas_semana
-            meta_arredondada = math.floor(meta + 0.5)
+            meta = (dados["peso"] / total_peso) * self.horas_dia * 7
+            meta = round(meta, 2)
 
-            dados["meta"] = meta_arredondada
+            dados["meta"] = meta
+            self.db.atualizar_disciplina(nome, meta, dados["concluido"])
 
-            # Atualiza no banco
-            database.atualizar_disciplina(
-                nome,
-                meta_arredondada,
-                dados["concluido"]
-            )
-
-    # ---------------- MARCAR HORAS ---------------- #
+    # ================= HORAS ================= #
 
     def marcar_hora(self, nome):
-        if nome in self.disciplinas:
-            if self.disciplinas[nome]["concluido"] < self.disciplinas[nome]["meta"]:
-                self.disciplinas[nome]["concluido"] += 1
+        if nome not in self.disciplinas:
+            return
 
-                # Salva automaticamente
-                database.atualizar_disciplina(
-                    nome,
-                    self.disciplinas[nome]["meta"],
-                    self.disciplinas[nome]["concluido"]
-                )
+        self.disciplinas[nome]["concluido"] += 1
 
-    # ---------------- VERIFICAÇÕES ---------------- #
-
-    def todas_concluidas(self):
-        return all(
-            d["concluido"] >= d["meta"]
-            for d in self.disciplinas.values()
-            if d["meta"] > 0
+        self.db.atualizar_disciplina(
+            nome,
+            self.disciplinas[nome]["meta"],
+            self.disciplinas[nome]["concluido"]
         )
 
-    def resetar_semana(self):
+    def resetar_horas(self):
         for nome in self.disciplinas:
             self.disciplinas[nome]["concluido"] = 0
 
-        database.resetar_concluidos()
+        self.db.resetar_concluidos()
+
+    # ================= PROGRESSO ================= #
 
     def progresso_percentual(self, nome):
-        d = self.disciplinas[nome]
+        dados = self.disciplinas[nome]
 
-        if d["meta"] == 0:
+        if dados["meta"] == 0:
             return 0
 
-        return (d["concluido"] / d["meta"]) * 100
+        return (dados["concluido"] / dados["meta"]) * 100
+
+    def progresso_total(self):
+        total_meta = sum(d["meta"] for d in self.disciplinas.values())
+        total_concluido = sum(d["concluido"] for d in self.disciplinas.values())
+
+        if total_meta == 0:
+            return 0
+
+        return (total_concluido / total_meta) * 100
