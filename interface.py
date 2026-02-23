@@ -86,14 +86,14 @@ class StudyApp:
             command=self.calcular
         ).pack(padx=25, pady=5, fill="x")
 
-        # RESET BUTTON
+        # RESET HORAS
         ctk.CTkButton(
             self.sidebar,
-            text="🔄 Resetar Semana",
+            text="🔄 Resetar Horas",
             height=40,
             fg_color="#7F1D1D",
             hover_color="#991B1B",
-            command=self.resetar
+            command=self.resetar_horas
         ).pack(padx=25, pady=(5, 15), fill="x")
 
         # -------- RELATÓRIO -------- #
@@ -106,7 +106,7 @@ class StudyApp:
             command=self.exportar_pdf
         ).pack(padx=25, pady=(0, 20), fill="x")
 
-        # ===== DONUT AGORA NA SIDEBAR ===== #
+        # ===== DONUT ===== #
         self.frame_grafico = ctk.CTkFrame(
             self.sidebar,
             fg_color="#0F172A"
@@ -171,15 +171,17 @@ class StudyApp:
         self.model.calcular_metas()
         self.atualizar()
 
-    def resetar(self):
+    # 🔥 NOVO RESET (zera apenas horas concluídas)
+    def resetar_horas(self):
         confirmar = messagebox.askyesno(
             "Confirmar Reset",
-            "Tem certeza que deseja resetar toda a semana?"
+            "Tem certeza que deseja resetar todas as horas concluídas?"
         )
 
         if confirmar:
-            self.model.disciplinas.clear()
-            self.model.horas_dia = 0
+            for nome in self.model.disciplinas:
+                self.model.disciplinas[nome]["concluido"] = 0
+
             self.atualizar()
 
     def marcar_hora_card(self, nome):
@@ -242,7 +244,7 @@ class StudyApp:
 
         self.atualizar_grafico_donut(percentual_total)
 
-    # ================= DONUT DINÂMICO ================= #
+    # ================= DONUT ================= #
 
     def atualizar_grafico_donut(self, percentual):
 
