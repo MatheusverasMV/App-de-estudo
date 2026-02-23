@@ -17,12 +17,11 @@ class StudyApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Dashboard de Estudo")
+        self.root.title("Study SaaS Premium")
         self.root.geometry("1200x750")
 
         self.model = StudyModel()
 
-        # 🔥 Carrega dados salvos automaticamente
         dados_salvos = persistencia.carregar()
         if dados_salvos:
             self.model.disciplinas = dados_salvos
@@ -34,7 +33,7 @@ class StudyApp:
 
     def criar_layout(self):
 
-        # Sidebar minimalista
+        # Sidebar
         self.sidebar = ctk.CTkFrame(self.root, width=240, corner_radius=20)
         self.sidebar.pack(side="left", fill="y", padx=20, pady=20)
 
@@ -62,7 +61,7 @@ class StudyApp:
         self.main = ctk.CTkFrame(self.root, corner_radius=20)
         self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-        #  KPI DASHBOARD
+        # KPI SUPERIOR
         self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20)
         self.kpi_frame.pack(fill="x", pady=(0, 20))
 
@@ -79,7 +78,7 @@ class StudyApp:
         self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20)
         self.cards_container.pack(fill="both", expand=True)
 
-        # Gráfico moderno
+        # Donut Chart
         self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, height=250)
         self.frame_grafico.pack(fill="both", expand=True, pady=20)
 
@@ -115,92 +114,108 @@ class StudyApp:
 
     def atualizar(self):
 
-        # 🔥 Salva automaticamente
         persistencia.salvar(self.model.disciplinas)
 
-        # Limpa cards antigos
         for widget in self.cards_container.winfo_children():
             widget.destroy()
 
         total_meta = 0
         total_concluido = 0
 
+        disciplina_mais_atrasada = None
+        menor_percentual = 101
+
         for nome, dados in self.model.disciplinas.items():
 
             total_meta += dados["meta"]
             total_concluido += dados["concluido"]
 
-            card = ctk.CTkFrame(self.cards_container, corner_radius=15)
-            card.pack(fill="x", padx=20, pady=10)
+            progresso = self.model.progresso_percentual(nome)
+
+            if progresso < menor_percentual and dados["meta"] > 0:
+                menor_percentual = progresso
+                disciplina_mais_atrasada = nome
+
+            # CARD PREMIUM
+            card = ctk.CTkFrame(self.cards_container, corner_radius=20)
+            card.pack(fill="x", padx=25, pady=15)
 
             titulo = ctk.CTkLabel(
                 card,
                 text=nome,
-                font=("Arial", 18, "bold")
+                font=("Arial", 20, "bold")
             )
-            titulo.pack(anchor="w", padx=20, pady=(15, 5))
+            titulo.pack(anchor="w", padx=25, pady=(20, 10))
 
-            progresso = self.model.progresso_percentual(nome)
-
-            barra = ctk.CTkProgressBar(card, height=15)
+            barra = ctk.CTkProgressBar(card, height=18, corner_radius=10)
             barra.set(progresso / 100)
-            barra.pack(fill="x", padx=20, pady=5)
+            barra.pack(fill="x", padx=25, pady=5)
 
             info = ctk.CTkLabel(
                 card,
-                text=f"{dados['concluido']}/{dados['meta']} horas ({int(progresso)}%)"
+                text=f"{dados['concluido']}/{dados['meta']} horas • {int(progresso)}%",
+                font=("Arial", 14)
             )
-            info.pack(anchor="w", padx=20)
+            info.pack(anchor="w", padx=25)
 
             botao = ctk.CTkButton(
                 card,
-                text="+1 hora",
-                width=120,
+                text="Marcar 1 hora",
+                width=140,
+                corner_radius=12,
                 command=lambda n=nome: self.marcar_hora_card(n)
             )
-            botao.pack(anchor="e", padx=20, pady=15)
+            botao.pack(anchor="e", padx=25, pady=20)
 
-        # 🔥 Atualiza métricas superiores
         percentual_total = 0
         if total_meta > 0:
             percentual_total = (total_concluido / total_meta) * 100
 
-        self.label_total.configure(
-            text=f"Total: {total_concluido}/{total_meta} horas"
+        self.kpi_total.configure(
+            text=f"Total: {total_concluido}/{total_meta}h"
         )
 
-        self.label_percentual.configure(
+        self.kpi_percentual.configure(
             text=f"Progresso Geral: {int(percentual_total)}%"
         )
 
-        self.atualizar_grafico()
+        if disciplina_mais_atrasada:
+            self.kpi_sugestao.configure(
+                text=f"📌 Foque agora em: {disciplina_mais_atrasada}"
+            )
+        else:
+            self.kpi_sugestao.configure(text="")
 
-        # 🔥 Reset automático
+        self.atualizar_grafico_donut()
+
         if self.model.todas_concluidas() and len(self.model.disciplinas) > 0:
             if messagebox.askyesno("Semana Concluída", "Deseja resetar para próxima semana?"):
                 self.model.resetar_semana()
                 self.atualizar()
 
-    # ================= GRÁFICO ================= #
+    # ================= DONUT CHART ================= #
 
-    def atualizar_grafico(self):
+    def atualizar_grafico_donut(self):
 
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
 
-        fig = plt.Figure(figsize=(6, 3))
+        total_meta = sum(d["meta"] for d in self.model.disciplinas.values())
+        total_concluido = sum(d["concluido"] for d in self.model.disciplinas.values())
+
+        restante = total_meta - total_concluido
+
+        fig = plt.Figure(figsize=(4, 4))
         ax = fig.add_subplot(111)
 
-        nomes = []
-        valores = []
+        sizes = [total_concluido, restante]
 
-        for nome in self.model.disciplinas:
-            nomes.append(nome)
-            valores.append(self.model.progresso_percentual(nome))
-
-        ax.bar(nomes, valores)
-        ax.set_ylim(0, 100)
-        ax.set_ylabel("Progresso (%)")
+        ax.pie(
+            sizes,
+            labels=["Concluído", "Restante"],
+            autopct="%1.0f%%",
+            wedgeprops=dict(width=0.4)
+        )
 
         canvas = FigureCanvasTkAgg(fig, self.frame_grafico)
         canvas.draw()
