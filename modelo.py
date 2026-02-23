@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 from database import Database
 
 
@@ -6,22 +7,27 @@ class StudyModel:
 
     def __init__(self):
 
-        # 🔥 Cria instância do banco
+        # Instância do banco
         self.db = Database()
 
-        # Carrega dados do banco
+        # Carrega dados salvos
         self.disciplinas = self.db.carregar_disciplinas()
-
-        # Carrega horas salvas
         self.horas_dia = self.db.carregar_horas_dia()
 
-    # ---------------- CONFIGURAÇÃO ---------------- #
+        # Marca início do ciclo atual
+        self.data_inicio_ciclo = datetime.now().strftime("%Y-%m-%d")
+
+    # ==============================
+    # CONFIGURAÇÃO
+    # ==============================
 
     def definir_horas_dia(self, horas):
         self.horas_dia = float(horas)
         self.db.salvar_horas_dia(self.horas_dia)
 
-    # ---------------- DISCIPLINAS ---------------- #
+    # ==============================
+    # DISCIPLINAS
+    # ==============================
 
     def adicionar_disciplina(self, nome, peso):
         peso = float(peso)
@@ -44,7 +50,9 @@ class StudyModel:
         self.disciplinas.clear()
         self.db.deletar_todas()
 
-    # ---------------- CÁLCULO DE METAS ---------------- #
+    # ==============================
+    # CÁLCULO DE METAS
+    # ==============================
 
     def calcular_metas(self):
         horas_semana = self.horas_dia * 7
@@ -65,7 +73,9 @@ class StudyModel:
                 dados["concluido"]
             )
 
-    # ---------------- MARCAR HORAS ---------------- #
+    # ==============================
+    # MARCAR HORAS
+    # ==============================
 
     def marcar_hora(self, nome):
 
@@ -90,7 +100,41 @@ class StudyModel:
 
         return True
 
-    # ---------------- RESET ---------------- #
+    # ==============================
+    # FINALIZAR CICLO (NOVO 🔥)
+    # ==============================
+
+    def finalizar_ciclo(self):
+
+        data_fim = datetime.now().strftime("%Y-%m-%d")
+
+        total_meta = sum(d["meta"] for d in self.disciplinas.values())
+        total_concluido = sum(d["concluido"] for d in self.disciplinas.values())
+
+        percentual = 0
+        if total_meta > 0:
+            percentual = (total_concluido / total_meta) * 100
+
+        # 🔥 Salva snapshot do ciclo
+        self.db.salvar_ciclo(
+            data_inicio=self.data_inicio_ciclo,
+            data_fim=data_fim,
+            horas_dia=self.horas_dia,
+            total_meta=total_meta,
+            total_concluido=total_concluido,
+            percentual=percentual,
+            disciplinas=self.disciplinas
+        )
+
+        # 🔥 Reinicia ciclo
+        self.resetar_horas()
+
+        # Atualiza nova data de início
+        self.data_inicio_ciclo = datetime.now().strftime("%Y-%m-%d")
+
+    # ==============================
+    # RESET
+    # ==============================
 
     def resetar_horas(self):
         for nome in self.disciplinas:
@@ -98,7 +142,9 @@ class StudyModel:
 
         self.db.resetar_concluidos()
 
-    # ---------------- PROGRESSO ---------------- #
+    # ==============================
+    # PROGRESSO
+    # ==============================
 
     def progresso_percentual(self, nome):
         d = self.disciplinas[nome]
