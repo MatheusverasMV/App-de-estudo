@@ -24,6 +24,32 @@ class StudyApp:
         self.criar_layout()
         self.atualizar()
 
+    # ================= COMPONENTE KPI ================= #
+
+    def criar_kpi_card(self, parent, titulo, valor, subtitulo, cor="#1E293B"):
+
+        card = ctk.CTkFrame(parent, corner_radius=18, fg_color=cor)
+        card.pack(side="left", expand=True, fill="both", padx=10, pady=10)
+
+        ctk.CTkLabel(
+            card,
+            text=valor,
+            font=("Arial", 28, "bold")
+        ).pack(pady=(20, 5))
+
+        ctk.CTkLabel(
+            card,
+            text=titulo,
+            font=("Arial", 14)
+        ).pack()
+
+        ctk.CTkLabel(
+            card,
+            text=subtitulo,
+            font=("Arial", 12),
+            text_color="gray"
+        ).pack(pady=(0, 15))
+
     # ================= LAYOUT ================= #
 
     def criar_layout(self):
@@ -53,18 +79,9 @@ class StudyApp:
         self.main = ctk.CTkFrame(self.root, corner_radius=20)
         self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-        # KPI SUPERIOR
+        # KPI FRAME
         self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20)
         self.kpi_frame.pack(fill="x", pady=(0, 20))
-
-        self.kpi_total = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18))
-        self.kpi_total.pack(side="left", padx=40, pady=20)
-
-        self.kpi_percentual = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18))
-        self.kpi_percentual.pack(side="left", padx=40)
-
-        self.kpi_sugestao = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18, "bold"))
-        self.kpi_sugestao.pack(side="right", padx=40)
 
         self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20)
         self.cards_container.pack(fill="both", expand=True)
@@ -82,10 +99,8 @@ class StudyApp:
             return
 
         self.model.adicionar_disciplina(nome, peso)
-
         self.entry_nome.delete(0, "end")
         self.entry_peso.delete(0, "end")
-
         self.atualizar()
 
     def calcular(self):
@@ -104,14 +119,16 @@ class StudyApp:
 
     def atualizar(self):
 
+        # LIMPA KPIs
+        for widget in self.kpi_frame.winfo_children():
+            widget.destroy()
+
+        # LIMPA CARDS
         for widget in self.cards_container.winfo_children():
             widget.destroy()
 
         total_meta = 0
         total_concluido = 0
-
-        disciplina_mais_atrasada = None
-        menor_percentual = 101
 
         for nome, dados in self.model.disciplinas.items():
 
@@ -119,10 +136,6 @@ class StudyApp:
             total_concluido += dados["concluido"]
 
             progresso = self.model.progresso_percentual(nome)
-
-            if progresso < menor_percentual and dados["meta"] > 0:
-                menor_percentual = progresso
-                disciplina_mais_atrasada = nome
 
             card = ctk.CTkFrame(self.cards_container, corner_radius=20)
             card.pack(fill="x", padx=20, pady=10)
@@ -152,20 +165,46 @@ class StudyApp:
         if total_meta > 0:
             percentual_total = (total_concluido / total_meta) * 100
 
-        self.kpi_total.configure(
-            text=f"Total: {total_concluido}/{total_meta}h"
-        )
-
-        self.kpi_percentual.configure(
-            text=f"Progresso Geral: {int(percentual_total)}%"
-        )
-
-        if disciplina_mais_atrasada:
-            self.kpi_sugestao.configure(
-                text=f"📌 Foque agora em: {disciplina_mais_atrasada}"
-            )
+        # PERFORMANCE
+        if percentual_total >= 75:
+            performance = "Excelente 🚀"
+            cor_perf = "#064E3B"
+        elif percentual_total >= 40:
+            performance = "Boa 🔥"
+            cor_perf = "#78350F"
         else:
-            self.kpi_sugestao.configure(text="")
+            performance = "Atenção ⚠"
+            cor_perf = "#7F1D1D"
+
+        # CRIA KPIs
+        self.criar_kpi_card(
+            self.kpi_frame,
+            "Horas Totais",
+            f"{total_concluido}h",
+            f"Meta: {total_meta}h"
+        )
+
+        self.criar_kpi_card(
+            self.kpi_frame,
+            "Progresso",
+            f"{int(percentual_total)}%",
+            "Desempenho geral"
+        )
+
+        self.criar_kpi_card(
+            self.kpi_frame,
+            "Disciplinas",
+            f"{len(self.model.disciplinas)}",
+            "Ativas"
+        )
+
+        self.criar_kpi_card(
+            self.kpi_frame,
+            "Performance",
+            performance,
+            "Status da semana",
+            cor=cor_perf
+        )
 
         self.atualizar_grafico_donut()
 
@@ -174,7 +213,7 @@ class StudyApp:
                 self.model.resetar_semana()
                 self.atualizar()
 
-    # ================= DONUT CHART ================= #
+    # ================= DONUT ================= #
 
     def atualizar_grafico_donut(self):
 
@@ -188,14 +227,11 @@ class StudyApp:
         ax = fig.add_subplot(111)
 
         if total_meta == 0:
-            ax.text(
-                0.5, 0.5,
-                "Sem dados ainda",
-                horizontalalignment='center',
-                verticalalignment='center',
-                fontsize=14,
-                transform=ax.transAxes
-            )
+            ax.text(0.5, 0.5, "Sem dados ainda",
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=14,
+                    transform=ax.transAxes)
             ax.axis("off")
         else:
             restante = max(total_meta - total_concluido, 0)
