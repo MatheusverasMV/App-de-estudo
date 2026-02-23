@@ -73,7 +73,7 @@ class StudyApp:
 
         return card
 
-    # ================= ANIMAÇÃO BARRA ================= #
+    # ================= ANIMAÇÃO ================= #
 
     def animar_barra(self, barra, valor_final):
 
@@ -91,39 +91,101 @@ class StudyApp:
 
     def criar_layout(self):
 
-        self.sidebar = ctk.CTkFrame(self.root, width=240, corner_radius=20)
-        self.sidebar.pack(side="left", fill="y", padx=20, pady=20)
+        # ===== SIDEBAR ===== #
+        self.sidebar = ctk.CTkFrame(
+            self.root,
+            width=260,
+            corner_radius=0,
+            fg_color="#0F172A"
+        )
+        self.sidebar.pack(side="left", fill="y")
 
         ctk.CTkLabel(
             self.sidebar,
-            text="Study SaaS",
-            font=("Arial", 22, "bold")
-        ).pack(pady=(20, 30))
+            text="STUDY PRO",
+            font=("Arial", 22, "bold"),
+            text_color="#FFFFFF"
+        ).pack(pady=(30, 5))
 
-        self.entry_horas = ctk.CTkEntry(self.sidebar, placeholder_text="Horas por dia")
-        self.entry_horas.pack(pady=10, padx=20)
+        ctk.CTkLabel(
+            self.sidebar,
+            text="Painel de Performance",
+            font=("Arial", 12),
+            text_color="#94A3B8"
+        ).pack(pady=(0, 30))
 
-        self.entry_nome = ctk.CTkEntry(self.sidebar, placeholder_text="Disciplina")
-        self.entry_nome.pack(pady=5, padx=20)
+        divider = ctk.CTkFrame(self.sidebar, height=1, fg_color="#1E293B")
+        divider.pack(fill="x", padx=20, pady=10)
 
-        self.entry_peso = ctk.CTkEntry(self.sidebar, placeholder_text="Peso")
-        self.entry_peso.pack(pady=5, padx=20)
+        ctk.CTkLabel(
+            self.sidebar,
+            text="PLANEJAMENTO",
+            font=("Arial", 11, "bold"),
+            text_color="#64748B"
+        ).pack(anchor="w", padx=25, pady=(20, 10))
 
-        ctk.CTkButton(self.sidebar, text="Adicionar", command=self.adicionar).pack(pady=5, padx=20)
-        ctk.CTkButton(self.sidebar, text="Calcular Metas", command=self.calcular).pack(pady=5, padx=20)
-        ctk.CTkButton(self.sidebar, text="Exportar PDF", command=self.exportar_pdf).pack(pady=40, padx=20)
+        self.entry_horas = ctk.CTkEntry(self.sidebar, placeholder_text="Horas por dia", height=40)
+        self.entry_horas.pack(pady=5, padx=25, fill="x")
 
-        self.main = ctk.CTkFrame(self.root, corner_radius=20)
-        self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+        self.entry_nome = ctk.CTkEntry(self.sidebar, placeholder_text="Disciplina", height=40)
+        self.entry_nome.pack(pady=5, padx=25, fill="x")
 
-        self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20)
-        self.kpi_frame.pack(fill="x", pady=(0, 20))
+        self.entry_peso = ctk.CTkEntry(self.sidebar, placeholder_text="Peso (importância)", height=40)
+        self.entry_peso.pack(pady=5, padx=25, fill="x")
 
-        self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20)
-        self.cards_container.pack(fill="both", expand=True)
+        ctk.CTkButton(
+            self.sidebar,
+            text="＋ Adicionar Disciplina",
+            height=40,
+            fg_color="#2563EB",
+            hover_color="#1D4ED8",
+            command=self.adicionar
+        ).pack(pady=(15, 5), padx=25, fill="x")
 
-        self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, height=250)
-        self.frame_grafico.pack(fill="both", expand=True, pady=20)
+        ctk.CTkButton(
+            self.sidebar,
+            text="⚡ Calcular Metas",
+            height=40,
+            fg_color="#0EA5E9",
+            hover_color="#0284C7",
+            command=self.calcular
+        ).pack(pady=5, padx=25, fill="x")
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text="RELATÓRIOS",
+            font=("Arial", 11, "bold"),
+            text_color="#64748B"
+        ).pack(anchor="w", padx=25, pady=(30, 10))
+
+        ctk.CTkButton(
+            self.sidebar,
+            text="📄 Exportar PDF",
+            height=40,
+            fg_color="#334155",
+            hover_color="#475569",
+            command=self.exportar_pdf
+        ).pack(pady=5, padx=25, fill="x")
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text="v1.0 Premium",
+            font=("Arial", 10),
+            text_color="#475569"
+        ).pack(side="bottom", pady=20)
+
+        # ===== MAIN ===== #
+        self.main = ctk.CTkFrame(self.root, corner_radius=0, fg_color="#0B1120")
+        self.main.pack(side="right", fill="both", expand=True)
+
+        self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20, fg_color="#0F172A")
+        self.kpi_frame.pack(fill="x", padx=30, pady=(30, 20))
+
+        self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20, fg_color="#0F172A")
+        self.cards_container.pack(fill="both", expand=True, padx=30)
+
+        self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, fg_color="#0F172A")
+        self.frame_grafico.pack(fill="both", expand=True, padx=30, pady=30)
 
     # ================= AÇÕES ================= #
 
@@ -182,8 +244,7 @@ class StudyApp:
 
             self.aplicar_hover(card, "#1E293B", "#2A3A4F")
 
-            titulo = ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold"))
-            titulo.pack(anchor="w", padx=20, pady=(15, 5))
+            ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold")).pack(anchor="w", padx=20, pady=(15, 5))
 
             barra = ctk.CTkProgressBar(card, height=15)
             barra.pack(fill="x", padx=20, pady=5)
@@ -193,13 +254,12 @@ class StudyApp:
             else:
                 barra.set(0)
 
-            info = ctk.CTkLabel(
+            ctk.CTkLabel(
                 card,
                 text=f"{dados['concluido']}/{dados['meta']} horas ({int(progresso)}%)"
-            )
-            info.pack(anchor="w", padx=20)
+            ).pack(anchor="w", padx=20)
 
-            botao = ctk.CTkButton(
+            ctk.CTkButton(
                 card,
                 text="＋ 1h",
                 width=100,
@@ -207,34 +267,17 @@ class StudyApp:
                 fg_color="#2563EB",
                 hover_color="#1D4ED8",
                 command=lambda n=nome: self.marcar_hora_card(n)
-            )
-            botao.pack(anchor="e", padx=20, pady=15)
+            ).pack(anchor="e", padx=20, pady=15)
 
         percentual_total = 0
         if total_meta > 0:
             percentual_total = (total_concluido / total_meta) * 100
 
-        if percentual_total >= 75:
-            performance = "Excelente 🚀"
-            cor_perf = "#064E3B"
-        elif percentual_total >= 40:
-            performance = "Boa 🔥"
-            cor_perf = "#78350F"
-        else:
-            performance = "Atenção ⚠"
-            cor_perf = "#7F1D1D"
-
         self.criar_kpi_card(self.kpi_frame, "Horas Totais", f"{total_concluido}h", f"Meta: {total_meta}h")
         self.criar_kpi_card(self.kpi_frame, "Progresso Geral", f"{int(percentual_total)}%", "Desempenho geral")
         self.criar_kpi_card(self.kpi_frame, "Disciplinas", f"{len(self.model.disciplinas)}", "Ativas")
-        self.criar_kpi_card(self.kpi_frame, "Performance", performance, "Status da semana", cor=cor_perf)
 
         self.atualizar_grafico_donut()
-
-        if self.model.todas_concluidas() and len(self.model.disciplinas) > 0:
-            if messagebox.askyesno("Semana Concluída", "Deseja resetar para próxima semana?"):
-                self.model.resetar_semana()
-                self.atualizar()
 
     # ================= DONUT ================= #
 
