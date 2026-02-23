@@ -24,69 +24,6 @@ class StudyApp:
         self.criar_layout()
         self.atualizar()
 
-    # ================= HOVER ================= #
-
-    def aplicar_hover(self, widget, cor_normal="#1E293B", cor_hover="#2A3A4F"):
-
-        def on_enter(event):
-            widget.configure(fg_color=cor_hover)
-
-        def on_leave(event):
-            widget.configure(fg_color=cor_normal)
-
-        widget.bind("<Enter>", on_enter)
-        widget.bind("<Leave>", on_leave)
-
-    # ================= KPI CARD ================= #
-
-    def criar_kpi_card(self, parent, titulo, valor, subtitulo, cor="#1E293B"):
-
-        card = ctk.CTkFrame(
-            parent,
-            corner_radius=18,
-            fg_color=cor,
-            border_width=1,
-            border_color="#2E3A4F"
-        )
-        card.pack(side="left", expand=True, fill="both", padx=10, pady=10)
-
-        self.aplicar_hover(card, cor, "#2A3A4F")
-
-        ctk.CTkLabel(
-            card,
-            text=valor,
-            font=("Arial", 28, "bold")
-        ).pack(pady=(20, 5))
-
-        ctk.CTkLabel(
-            card,
-            text=titulo,
-            font=("Arial", 14)
-        ).pack()
-
-        ctk.CTkLabel(
-            card,
-            text=subtitulo,
-            font=("Arial", 12),
-            text_color="gray"
-        ).pack(pady=(0, 15))
-
-        return card
-
-    # ================= ANIMAÇÃO ================= #
-
-    def animar_barra(self, barra, valor_final):
-
-        passos = 20
-
-        def animar(passo=0):
-            if passo <= passos:
-                valor_atual = (valor_final / passos) * passo
-                barra.set(valor_atual)
-                barra.after(15, lambda: animar(passo + 1))
-
-        animar()
-
     # ================= LAYOUT ================= #
 
     def criar_layout(self):
@@ -94,7 +31,7 @@ class StudyApp:
         # ===== SIDEBAR ===== #
         self.sidebar = ctk.CTkFrame(
             self.root,
-            width=260,
+            width=280,
             corner_radius=0,
             fg_color="#0F172A"
         )
@@ -112,26 +49,24 @@ class StudyApp:
             text="Painel de Performance",
             font=("Arial", 12),
             text_color="#94A3B8"
-        ).pack(pady=(0, 30))
+        ).pack(pady=(0, 20))
 
-        divider = ctk.CTkFrame(self.sidebar, height=1, fg_color="#1E293B")
-        divider.pack(fill="x", padx=20, pady=10)
-
+        # -------- PLANEJAMENTO -------- #
         ctk.CTkLabel(
             self.sidebar,
             text="PLANEJAMENTO",
             font=("Arial", 11, "bold"),
             text_color="#64748B"
-        ).pack(anchor="w", padx=25, pady=(20, 10))
+        ).pack(anchor="w", padx=25, pady=(15, 5))
 
         self.entry_horas = ctk.CTkEntry(self.sidebar, placeholder_text="Horas por dia", height=40)
-        self.entry_horas.pack(pady=5, padx=25, fill="x")
+        self.entry_horas.pack(padx=25, pady=5, fill="x")
 
         self.entry_nome = ctk.CTkEntry(self.sidebar, placeholder_text="Disciplina", height=40)
-        self.entry_nome.pack(pady=5, padx=25, fill="x")
+        self.entry_nome.pack(padx=25, pady=5, fill="x")
 
         self.entry_peso = ctk.CTkEntry(self.sidebar, placeholder_text="Peso (importância)", height=40)
-        self.entry_peso.pack(pady=5, padx=25, fill="x")
+        self.entry_peso.pack(padx=25, pady=5, fill="x")
 
         ctk.CTkButton(
             self.sidebar,
@@ -140,7 +75,7 @@ class StudyApp:
             fg_color="#2563EB",
             hover_color="#1D4ED8",
             command=self.adicionar
-        ).pack(pady=(15, 5), padx=25, fill="x")
+        ).pack(padx=25, pady=(10, 5), fill="x")
 
         ctk.CTkButton(
             self.sidebar,
@@ -149,15 +84,19 @@ class StudyApp:
             fg_color="#0EA5E9",
             hover_color="#0284C7",
             command=self.calcular
-        ).pack(pady=5, padx=25, fill="x")
+        ).pack(padx=25, pady=5, fill="x")
 
-        ctk.CTkLabel(
+        # RESET BUTTON
+        ctk.CTkButton(
             self.sidebar,
-            text="RELATÓRIOS",
-            font=("Arial", 11, "bold"),
-            text_color="#64748B"
-        ).pack(anchor="w", padx=25, pady=(30, 10))
+            text="🔄 Resetar Semana",
+            height=40,
+            fg_color="#7F1D1D",
+            hover_color="#991B1B",
+            command=self.resetar
+        ).pack(padx=25, pady=(5, 15), fill="x")
 
+        # -------- RELATÓRIO -------- #
         ctk.CTkButton(
             self.sidebar,
             text="📄 Exportar PDF",
@@ -165,27 +104,40 @@ class StudyApp:
             fg_color="#334155",
             hover_color="#475569",
             command=self.exportar_pdf
-        ).pack(pady=5, padx=25, fill="x")
+        ).pack(padx=25, pady=(0, 20), fill="x")
+
+        # ===== DONUT AGORA NA SIDEBAR ===== #
+        self.frame_grafico = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="#0F172A"
+        )
+        self.frame_grafico.pack(padx=10, pady=10, fill="both")
 
         ctk.CTkLabel(
             self.sidebar,
-            text="v1.0 Premium",
+            text="v2.0 Sólido",
             font=("Arial", 10),
             text_color="#475569"
-        ).pack(side="bottom", pady=20)
+        ).pack(side="bottom", pady=10)
 
         # ===== MAIN ===== #
-        self.main = ctk.CTkFrame(self.root, corner_radius=0, fg_color="#0B1120")
+        self.main = ctk.CTkFrame(self.root, fg_color="#0B1120")
         self.main.pack(side="right", fill="both", expand=True)
 
         self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20, fg_color="#0F172A")
         self.kpi_frame.pack(fill="x", padx=30, pady=(30, 20))
 
         self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20, fg_color="#0F172A")
-        self.cards_container.pack(fill="both", expand=True, padx=30)
+        self.cards_container.pack(fill="both", expand=True, padx=30, pady=(0, 30))
 
-        self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, fg_color="#0F172A")
-        self.frame_grafico.pack(fill="both", expand=True, padx=30, pady=30)
+    # ================= VALIDAÇÕES ================= #
+
+    def validar_numero(self, valor, campo):
+        try:
+            return float(valor)
+        except:
+            messagebox.showerror("Erro", f"{campo} deve ser um número válido.")
+            return None
 
     # ================= AÇÕES ================= #
 
@@ -196,18 +148,39 @@ class StudyApp:
         if nome == "" or peso == "":
             return
 
-        self.model.adicionar_disciplina(nome, peso)
+        peso_validado = self.validar_numero(peso, "Peso")
+        if peso_validado is None:
+            return
+
+        self.model.adicionar_disciplina(nome, peso_validado)
         self.entry_nome.delete(0, "end")
         self.entry_peso.delete(0, "end")
         self.atualizar()
 
     def calcular(self):
-        if self.entry_horas.get() == "":
+        horas = self.entry_horas.get()
+
+        if horas == "":
             return
 
-        self.model.definir_horas_dia(self.entry_horas.get())
+        horas_validada = self.validar_numero(horas, "Horas por dia")
+        if horas_validada is None:
+            return
+
+        self.model.definir_horas_dia(horas_validada)
         self.model.calcular_metas()
         self.atualizar()
+
+    def resetar(self):
+        confirmar = messagebox.askyesno(
+            "Confirmar Reset",
+            "Tem certeza que deseja resetar toda a semana?"
+        )
+
+        if confirmar:
+            self.model.disciplinas.clear()
+            self.model.horas_dia = 0
+            self.atualizar()
 
     def marcar_hora_card(self, nome):
         self.model.marcar_hora(nome)
@@ -223,13 +196,18 @@ class StudyApp:
         for widget in self.cards_container.winfo_children():
             widget.destroy()
 
-        total_meta = 0
-        total_concluido = 0
+        total_meta = sum(d["meta"] for d in self.model.disciplinas.values())
+        total_concluido = sum(d["concluido"] for d in self.model.disciplinas.values())
+
+        percentual_total = 0
+        if total_meta > 0:
+            percentual_total = (total_concluido / total_meta) * 100
+
+        self.criar_kpi_card(self.kpi_frame, "Horas Totais", f"{total_concluido}h", f"Meta: {total_meta}h")
+        self.criar_kpi_card(self.kpi_frame, "Progresso Geral", f"{int(percentual_total)}%", "Desempenho geral")
+        self.criar_kpi_card(self.kpi_frame, "Disciplinas", f"{len(self.model.disciplinas)}", "Ativas")
 
         for nome, dados in self.model.disciplinas.items():
-
-            total_meta += dados["meta"]
-            total_concluido += dados["concluido"]
 
             progresso = self.model.progresso_percentual(nome)
 
@@ -242,17 +220,11 @@ class StudyApp:
             )
             card.pack(fill="x", padx=20, pady=10)
 
-            self.aplicar_hover(card, "#1E293B", "#2A3A4F")
-
             ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold")).pack(anchor="w", padx=20, pady=(15, 5))
 
             barra = ctk.CTkProgressBar(card, height=15)
             barra.pack(fill="x", padx=20, pady=5)
-
-            if dados["meta"] > 0:
-                self.animar_barra(barra, progresso / 100)
-            else:
-                barra.set(0)
+            barra.set(progresso / 100 if dados["meta"] > 0 else 0)
 
             ctk.CTkLabel(
                 card,
@@ -263,56 +235,58 @@ class StudyApp:
                 card,
                 text="＋ 1h",
                 width=100,
-                corner_radius=15,
                 fg_color="#2563EB",
                 hover_color="#1D4ED8",
                 command=lambda n=nome: self.marcar_hora_card(n)
             ).pack(anchor="e", padx=20, pady=15)
 
-        percentual_total = 0
-        if total_meta > 0:
-            percentual_total = (total_concluido / total_meta) * 100
+        self.atualizar_grafico_donut(percentual_total)
 
-        self.criar_kpi_card(self.kpi_frame, "Horas Totais", f"{total_concluido}h", f"Meta: {total_meta}h")
-        self.criar_kpi_card(self.kpi_frame, "Progresso Geral", f"{int(percentual_total)}%", "Desempenho geral")
-        self.criar_kpi_card(self.kpi_frame, "Disciplinas", f"{len(self.model.disciplinas)}", "Ativas")
+    # ================= DONUT DINÂMICO ================= #
 
-        self.atualizar_grafico_donut()
-
-    # ================= DONUT ================= #
-
-    def atualizar_grafico_donut(self):
+    def atualizar_grafico_donut(self, percentual):
 
         for widget in self.frame_grafico.winfo_children():
             widget.destroy()
 
-        total_meta = sum(d["meta"] for d in self.model.disciplinas.values())
-        total_concluido = sum(d["concluido"] for d in self.model.disciplinas.values())
-
-        fig = plt.Figure(figsize=(4, 4))
-        ax = fig.add_subplot(111)
-
-        if total_meta == 0:
-            ax.text(0.5, 0.5, "Sem dados ainda",
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=14,
-                    transform=ax.transAxes)
-            ax.axis("off")
+        if percentual <= 25:
+            cor = "#DC2626"
+        elif percentual <= 50:
+            cor = "#FACC15"
         else:
-            restante = max(total_meta - total_concluido, 0)
-            sizes = [total_concluido, restante]
+            cor = "#16A34A"
 
-            ax.pie(
-                sizes,
-                labels=["Concluído", "Restante"],
-                autopct="%1.0f%%",
-                wedgeprops=dict(width=0.4)
-            )
+        restante = 100 - percentual
+
+        fig = plt.Figure(figsize=(3, 3), facecolor="#0F172A")
+        ax = fig.add_subplot(111)
+        ax.set_facecolor("#0F172A")
+
+        ax.pie(
+            [percentual, restante],
+            colors=[cor, "#1E293B"],
+            startangle=90,
+            wedgeprops=dict(width=0.4)
+        )
+
+        ax.text(0, 0, f"{int(percentual)}%",
+                ha="center", va="center",
+                fontsize=18, color="white")
 
         canvas = FigureCanvasTkAgg(fig, self.frame_grafico)
         canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        canvas.get_tk_widget().pack()
+
+    # ================= KPI ================= #
+
+    def criar_kpi_card(self, parent, titulo, valor, subtitulo):
+
+        card = ctk.CTkFrame(parent, corner_radius=18, fg_color="#1E293B")
+        card.pack(side="left", expand=True, fill="both", padx=10, pady=10)
+
+        ctk.CTkLabel(card, text=valor, font=("Arial", 28, "bold")).pack(pady=(20, 5))
+        ctk.CTkLabel(card, text=titulo, font=("Arial", 14)).pack()
+        ctk.CTkLabel(card, text=subtitulo, font=("Arial", 12), text_color="gray").pack(pady=(0, 15))
 
     # ================= PDF ================= #
 
