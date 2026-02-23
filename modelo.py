@@ -1,21 +1,25 @@
 import math
-import database
+from database import Database
 
 
 class StudyModel:
 
     def __init__(self):
-        # Garante que a tabela exista
-        database.criar_tabela()
 
-        # Carrega dados salvos do banco
-        self.disciplinas = database.carregar_disciplinas()
-        self.horas_dia = 0
+        # 🔥 Cria instância do banco
+        self.db = Database()
+
+        # Carrega dados do banco
+        self.disciplinas = self.db.carregar_disciplinas()
+
+        # Carrega horas salvas
+        self.horas_dia = self.db.carregar_horas_dia()
 
     # ---------------- CONFIGURAÇÃO ---------------- #
 
     def definir_horas_dia(self, horas):
         self.horas_dia = float(horas)
+        self.db.salvar_horas_dia(self.horas_dia)
 
     # ---------------- DISCIPLINAS ---------------- #
 
@@ -29,7 +33,16 @@ class StudyModel:
                 "concluido": 0
             }
 
-            database.inserir_disciplina(nome, peso)
+            self.db.inserir_disciplina(nome, peso)
+
+    def deletar_disciplina(self, nome):
+        if nome in self.disciplinas:
+            del self.disciplinas[nome]
+            self.db.deletar_disciplina(nome)
+
+    def deletar_todas(self):
+        self.disciplinas.clear()
+        self.db.deletar_todas()
 
     # ---------------- CÁLCULO DE METAS ---------------- #
 
@@ -37,7 +50,6 @@ class StudyModel:
         horas_semana = self.horas_dia * 7
         soma_pesos = sum(d["peso"] for d in self.disciplinas.values())
 
-        # Evita divisão por zero
         if soma_pesos == 0:
             return
 
@@ -47,8 +59,7 @@ class StudyModel:
 
             dados["meta"] = meta_arredondada
 
-            # Atualiza no banco
-            database.atualizar_disciplina(
+            self.db.atualizar_disciplina(
                 nome,
                 meta_arredondada,
                 dados["concluido"]
@@ -63,18 +74,15 @@ class StudyModel:
 
         disciplina = self.disciplinas[nome]
 
-        # 🔒 BLOQUEIO: não ultrapassa a meta
         if disciplina["concluido"] >= disciplina["meta"]:
             return False
 
         disciplina["concluido"] += 1
 
-        # 🔥 Segurança extra: nunca deixa passar da meta
         if disciplina["concluido"] > disciplina["meta"]:
             disciplina["concluido"] = disciplina["meta"]
 
-        # Salva automaticamente no banco
-        database.atualizar_disciplina(
+        self.db.atualizar_disciplina(
             nome,
             disciplina["meta"],
             disciplina["concluido"]
@@ -82,20 +90,15 @@ class StudyModel:
 
         return True
 
-    # ---------------- VERIFICAÇÕES ---------------- #
+    # ---------------- RESET ---------------- #
 
-    def todas_concluidas(self):
-        return all(
-            d["concluido"] >= d["meta"]
-            for d in self.disciplinas.values()
-            if d["meta"] > 0
-        )
-
-    def resetar_semana(self):
+    def resetar_horas(self):
         for nome in self.disciplinas:
             self.disciplinas[nome]["concluido"] = 0
 
-        database.resetar_concluidos()
+        self.db.resetar_concluidos()
+
+    # ---------------- PROGRESSO ---------------- #
 
     def progresso_percentual(self, nome):
         d = self.disciplinas[nome]
@@ -104,6 +107,15 @@ class StudyModel:
             return 0
 
         percentual = (d["concluido"] / d["meta"]) * 100
+        return min(percentual, 100)
 
-        # 🔥 Garante que nunca passe de 100%
+    def progresso_total(self):
+
+        total_meta = sum(d["meta"] for d in self.disciplinas.values())
+        total_concluido = sum(d["concluido"] for d in self.disciplinas.values())
+
+        if total_meta == 0:
+            return 0
+
+        percentual = (total_concluido / total_meta) * 100
         return min(percentual, 100)
