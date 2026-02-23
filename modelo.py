@@ -84,6 +84,7 @@ class StudyModel:
 
         disciplina = self.disciplinas[nome]
 
+        # 🔥 Limite de meta
         if disciplina["concluido"] >= disciplina["meta"]:
             return False
 
@@ -101,7 +102,7 @@ class StudyModel:
         return True
 
     # ==============================
-    # FINALIZAR CICLO (NOVO 🔥)
+    # FINALIZAR CICLO
     # ==============================
 
     def finalizar_ciclo(self):
@@ -129,7 +130,7 @@ class StudyModel:
         # 🔥 Reinicia ciclo
         self.resetar_horas()
 
-        # Atualiza nova data de início
+        # Nova data de início
         self.data_inicio_ciclo = datetime.now().strftime("%Y-%m-%d")
 
     # ==============================
@@ -165,3 +166,19 @@ class StudyModel:
 
         percentual = (total_concluido / total_meta) * 100
         return min(percentual, 100)
+
+    # ==============================
+    # HISTÓRICO 🔥 (NOVO)
+    # ==============================
+
+    def obter_historico(self):
+        """
+        Retorna lista de ciclos salvos
+        """
+        return self.db.listar_ciclos()
+
+    def obter_disciplinas_do_ciclo(self, ciclo_id):
+        """
+        Retorna disciplinas de um ciclo específico
+        """
+        return self.db.carregar_disciplinas_do_ciclo(ciclo_id)
