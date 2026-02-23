@@ -1,7 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from modelo import StudyModel
-import persistencia
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -21,10 +20,6 @@ class StudyApp:
         self.root.geometry("1200x750")
 
         self.model = StudyModel()
-
-        dados_salvos = persistencia.carregar()
-        if dados_salvos:
-            self.model.disciplinas = dados_salvos
 
         self.criar_layout()
         self.atualizar()
@@ -87,8 +82,10 @@ class StudyApp:
             return
 
         self.model.adicionar_disciplina(nome, peso)
+
         self.entry_nome.delete(0, "end")
         self.entry_peso.delete(0, "end")
+
         self.atualizar()
 
     def calcular(self):
@@ -106,8 +103,6 @@ class StudyApp:
     # ================= ATUALIZAÇÃO ================= #
 
     def atualizar(self):
-
-        persistencia.salvar(self.model.disciplinas)
 
         for widget in self.cards_container.winfo_children():
             widget.destroy()
@@ -136,7 +131,7 @@ class StudyApp:
             titulo.pack(anchor="w", padx=20, pady=(15, 5))
 
             barra = ctk.CTkProgressBar(card, height=15)
-            barra.set(progresso / 100)
+            barra.set(progresso / 100 if dados["meta"] > 0 else 0)
             barra.pack(fill="x", padx=20, pady=5)
 
             info = ctk.CTkLabel(
@@ -179,7 +174,7 @@ class StudyApp:
                 self.model.resetar_semana()
                 self.atualizar()
 
-    # ================= DONUT CHART SEGURO ================= #
+    # ================= DONUT CHART ================= #
 
     def atualizar_grafico_donut(self):
 
@@ -203,7 +198,7 @@ class StudyApp:
             )
             ax.axis("off")
         else:
-            restante = total_meta - total_concluido
+            restante = max(total_meta - total_concluido, 0)
             sizes = [total_concluido, restante]
 
             ax.pie(
