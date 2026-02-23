@@ -24,12 +24,33 @@ class StudyApp:
         self.criar_layout()
         self.atualizar()
 
-    # ================= COMPONENTE KPI ================= #
+    # ================= HOVER ================= #
+
+    def aplicar_hover(self, widget, cor_normal="#1E293B", cor_hover="#2A3A4F"):
+
+        def on_enter(event):
+            widget.configure(fg_color=cor_hover)
+
+        def on_leave(event):
+            widget.configure(fg_color=cor_normal)
+
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
+
+    # ================= KPI CARD ================= #
 
     def criar_kpi_card(self, parent, titulo, valor, subtitulo, cor="#1E293B"):
 
-        card = ctk.CTkFrame(parent, corner_radius=18, fg_color=cor)
+        card = ctk.CTkFrame(
+            parent,
+            corner_radius=18,
+            fg_color=cor,
+            border_width=1,
+            border_color="#2E3A4F"
+        )
         card.pack(side="left", expand=True, fill="both", padx=10, pady=10)
+
+        self.aplicar_hover(card, cor, "#2A3A4F")
 
         ctk.CTkLabel(
             card,
@@ -49,6 +70,22 @@ class StudyApp:
             font=("Arial", 12),
             text_color="gray"
         ).pack(pady=(0, 15))
+
+        return card
+
+    # ================= ANIMAÇÃO BARRA ================= #
+
+    def animar_barra(self, barra, valor_final):
+
+        passos = 20
+
+        def animar(passo=0):
+            if passo <= passos:
+                valor_atual = (valor_final / passos) * passo
+                barra.set(valor_atual)
+                barra.after(15, lambda: animar(passo + 1))
+
+        animar()
 
     # ================= LAYOUT ================= #
 
@@ -79,7 +116,6 @@ class StudyApp:
         self.main = ctk.CTkFrame(self.root, corner_radius=20)
         self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-        # KPI FRAME
         self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20)
         self.kpi_frame.pack(fill="x", pady=(0, 20))
 
@@ -119,11 +155,9 @@ class StudyApp:
 
     def atualizar(self):
 
-        # LIMPA KPIs
         for widget in self.kpi_frame.winfo_children():
             widget.destroy()
 
-        # LIMPA CARDS
         for widget in self.cards_container.winfo_children():
             widget.destroy()
 
@@ -137,15 +171,27 @@ class StudyApp:
 
             progresso = self.model.progresso_percentual(nome)
 
-            card = ctk.CTkFrame(self.cards_container, corner_radius=20)
+            card = ctk.CTkFrame(
+                self.cards_container,
+                corner_radius=20,
+                fg_color="#1E293B",
+                border_width=1,
+                border_color="#2E3A4F"
+            )
             card.pack(fill="x", padx=20, pady=10)
+
+            self.aplicar_hover(card, "#1E293B", "#2A3A4F")
 
             titulo = ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold"))
             titulo.pack(anchor="w", padx=20, pady=(15, 5))
 
             barra = ctk.CTkProgressBar(card, height=15)
-            barra.set(progresso / 100 if dados["meta"] > 0 else 0)
             barra.pack(fill="x", padx=20, pady=5)
+
+            if dados["meta"] > 0:
+                self.animar_barra(barra, progresso / 100)
+            else:
+                barra.set(0)
 
             info = ctk.CTkLabel(
                 card,
@@ -155,8 +201,11 @@ class StudyApp:
 
             botao = ctk.CTkButton(
                 card,
-                text="Marcar 1 hora",
-                width=120,
+                text="＋ 1h",
+                width=100,
+                corner_radius=15,
+                fg_color="#2563EB",
+                hover_color="#1D4ED8",
                 command=lambda n=nome: self.marcar_hora_card(n)
             )
             botao.pack(anchor="e", padx=20, pady=15)
@@ -165,7 +214,6 @@ class StudyApp:
         if total_meta > 0:
             percentual_total = (total_concluido / total_meta) * 100
 
-        # PERFORMANCE
         if percentual_total >= 75:
             performance = "Excelente 🚀"
             cor_perf = "#064E3B"
@@ -176,35 +224,10 @@ class StudyApp:
             performance = "Atenção ⚠"
             cor_perf = "#7F1D1D"
 
-        # CRIA KPIs
-        self.criar_kpi_card(
-            self.kpi_frame,
-            "Horas Totais",
-            f"{total_concluido}h",
-            f"Meta: {total_meta}h"
-        )
-
-        self.criar_kpi_card(
-            self.kpi_frame,
-            "Progresso",
-            f"{int(percentual_total)}%",
-            "Desempenho geral"
-        )
-
-        self.criar_kpi_card(
-            self.kpi_frame,
-            "Disciplinas",
-            f"{len(self.model.disciplinas)}",
-            "Ativas"
-        )
-
-        self.criar_kpi_card(
-            self.kpi_frame,
-            "Performance",
-            performance,
-            "Status da semana",
-            cor=cor_perf
-        )
+        self.criar_kpi_card(self.kpi_frame, "Horas Totais", f"{total_concluido}h", f"Meta: {total_meta}h")
+        self.criar_kpi_card(self.kpi_frame, "Progresso Geral", f"{int(percentual_total)}%", "Desempenho geral")
+        self.criar_kpi_card(self.kpi_frame, "Disciplinas", f"{len(self.model.disciplinas)}", "Ativas")
+        self.criar_kpi_card(self.kpi_frame, "Performance", performance, "Status da semana", cor=cor_perf)
 
         self.atualizar_grafico_donut()
 
