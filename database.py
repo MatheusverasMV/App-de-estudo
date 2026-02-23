@@ -3,83 +3,102 @@ import sqlite3
 DB_NAME = "estudos.db"
 
 
-def conectar():
-    return sqlite3.connect(DB_NAME)
+class Database:
 
+    def __init__(self):
+        self.conn = sqlite3.connect(DB_NAME)
+        self.cursor = self.conn.cursor()
+        self.criar_tabelas()
 
-def criar_tabela():
-    conn = conectar()
-    cursor = conn.cursor()
+    # ================== TABELAS ================== #
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS disciplinas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT UNIQUE NOT NULL,
-            peso INTEGER NOT NULL,
-            meta INTEGER NOT NULL,
-            concluido INTEGER NOT NULL
-        )
-    """)
+    def criar_tabelas(self):
 
-    conn.commit()
-    conn.close()
+        # Tabela disciplinas
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS disciplinas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT UNIQUE NOT NULL,
+                peso REAL NOT NULL,
+                meta REAL NOT NULL,
+                concluido REAL NOT NULL
+            )
+        """)
 
+        # Tabela configurações
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                id INTEGER PRIMARY KEY,
+                horas_dia REAL
+            )
+        """)
 
-# ---------------- CRUD ---------------- #
+        self.conn.commit()
 
-def inserir_disciplina(nome, peso, meta=0, concluido=0):
-    conn = conectar()
-    cursor = conn.cursor()
+    # ================== DISCIPLINAS ================== #
 
-    cursor.execute("""
-        INSERT OR IGNORE INTO disciplinas (nome, peso, meta, concluido)
-        VALUES (?, ?, ?, ?)
-    """, (nome, peso, meta, concluido))
+    def inserir_disciplina(self, nome, peso, meta=0, concluido=0):
+        self.cursor.execute("""
+            INSERT OR IGNORE INTO disciplinas (nome, peso, meta, concluido)
+            VALUES (?, ?, ?, ?)
+        """, (nome, peso, meta, concluido))
+        self.conn.commit()
 
-    conn.commit()
-    conn.close()
+    def atualizar_disciplina(self, nome, meta, concluido):
+        self.cursor.execute("""
+            UPDATE disciplinas
+            SET meta=?, concluido=?
+            WHERE nome=?
+        """, (meta, concluido, nome))
+        self.conn.commit()
 
+    def deletar_disciplina(self, nome):
+        self.cursor.execute("""
+            DELETE FROM disciplinas WHERE nome=?
+        """, (nome,))
+        self.conn.commit()
 
-def atualizar_disciplina(nome, meta, concluido):
-    conn = conectar()
-    cursor = conn.cursor()
+    def deletar_todas(self):
+        self.cursor.execute("DELETE FROM disciplinas")
+        self.conn.commit()
 
-    cursor.execute("""
-        UPDATE disciplinas
-        SET meta=?, concluido=?
-        WHERE nome=?
-    """, (meta, concluido, nome))
+    def carregar_disciplinas(self):
+        self.cursor.execute("""
+            SELECT nome, peso, meta, concluido FROM disciplinas
+        """)
+        dados = self.cursor.fetchall()
 
-    conn.commit()
-    conn.close()
+        disciplinas = {}
 
+        for nome, peso, meta, concluido in dados:
+            disciplinas[nome] = {
+                "peso": peso,
+                "meta": meta,
+                "concluido": concluido
+            }
 
-def carregar_disciplinas():
-    conn = conectar()
-    cursor = conn.cursor()
+        return disciplinas
 
-    cursor.execute("SELECT nome, peso, meta, concluido FROM disciplinas")
-    dados = cursor.fetchall()
+    def resetar_concluidos(self):
+        self.cursor.execute("UPDATE disciplinas SET concluido = 0")
+        self.conn.commit()
 
-    conn.close()
+    # ================== CONFIG ================== #
 
-    disciplinas = {}
+    def salvar_horas_dia(self, horas):
+        self.cursor.execute("DELETE FROM configuracoes")
+        self.cursor.execute("""
+            INSERT INTO configuracoes (horas_dia)
+            VALUES (?)
+        """, (horas,))
+        self.conn.commit()
 
-    for nome, peso, meta, concluido in dados:
-        disciplinas[nome] = {
-            "peso": peso,
-            "meta": meta,
-            "concluido": concluido
-        }
+    def carregar_horas_dia(self):
+        self.cursor.execute("SELECT horas_dia FROM configuracoes LIMIT 1")
+        resultado = self.cursor.fetchone()
+        return resultado[0] if resultado else 0
 
-    return disciplinas
+    # ================== FECHAR ================== #
 
-
-def resetar_concluidos():
-    conn = conectar()
-    cursor = conn.cursor()
-
-    cursor.execute("UPDATE disciplinas SET concluido = 0")
-
-    conn.commit()
-    conn.close()
+    def fechar(self):
+        self.conn.close()
