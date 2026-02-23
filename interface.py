@@ -34,45 +34,54 @@ class StudyApp:
 
     def criar_layout(self):
 
-        # Sidebar
-        self.sidebar = ctk.CTkFrame(self.root, width=250)
-        self.sidebar.pack(side="left", fill="y", padx=15, pady=15)
+        # Sidebar minimalista
+        self.sidebar = ctk.CTkFrame(self.root, width=240, corner_radius=20)
+        self.sidebar.pack(side="left", fill="y", padx=20, pady=20)
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text="Study SaaS",
+            font=("Arial", 22, "bold")
+        ).pack(pady=(20, 30))
 
         self.entry_horas = ctk.CTkEntry(self.sidebar, placeholder_text="Horas por dia")
-        self.entry_horas.pack(pady=10)
+        self.entry_horas.pack(pady=10, padx=20)
 
         self.entry_nome = ctk.CTkEntry(self.sidebar, placeholder_text="Disciplina")
-        self.entry_nome.pack(pady=5)
+        self.entry_nome.pack(pady=5, padx=20)
 
         self.entry_peso = ctk.CTkEntry(self.sidebar, placeholder_text="Peso")
-        self.entry_peso.pack(pady=5)
+        self.entry_peso.pack(pady=5, padx=20)
 
-        ctk.CTkButton(self.sidebar, text="Adicionar", command=self.adicionar).pack(pady=5)
-        ctk.CTkButton(self.sidebar, text="Calcular Metas", command=self.calcular).pack(pady=5)
+        ctk.CTkButton(self.sidebar, text="Adicionar", command=self.adicionar).pack(pady=5, padx=20)
+        ctk.CTkButton(self.sidebar, text="Calcular Metas", command=self.calcular).pack(pady=5, padx=20)
 
-        ctk.CTkButton(self.sidebar, text="Exportar PDF", command=self.exportar_pdf).pack(pady=30)
+        ctk.CTkButton(self.sidebar, text="Exportar PDF", command=self.exportar_pdf).pack(pady=40, padx=20)
 
         # Área principal
-        self.main = ctk.CTkFrame(self.root)
-        self.main.pack(side="right", fill="both", expand=True, padx=15, pady=15)
+        self.main = ctk.CTkFrame(self.root, corner_radius=20)
+        self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-        # 🔥 Dashboard superior
-        self.dashboard_top = ctk.CTkFrame(self.main, height=120)
-        self.dashboard_top.pack(fill="x", pady=(0, 15))
+        #  KPI DASHBOARD
+        self.kpi_frame = ctk.CTkFrame(self.main, corner_radius=20)
+        self.kpi_frame.pack(fill="x", pady=(0, 20))
 
-        self.label_total = ctk.CTkLabel(self.dashboard_top, text="", font=("Arial", 20, "bold"))
-        self.label_total.pack(side="left", padx=30)
+        self.kpi_total = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18))
+        self.kpi_total.pack(side="left", padx=40, pady=20)
 
-        self.label_percentual = ctk.CTkLabel(self.dashboard_top, text="", font=("Arial", 20))
-        self.label_percentual.pack(side="left", padx=30)
+        self.kpi_percentual = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18))
+        self.kpi_percentual.pack(side="left", padx=40)
 
-        # Cards container
-        self.cards_container = ctk.CTkScrollableFrame(self.main)
+        self.kpi_sugestao = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18, "bold"))
+        self.kpi_sugestao.pack(side="right", padx=40)
+
+        # Cards
+        self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20)
         self.cards_container.pack(fill="both", expand=True)
 
-        # Gráfico
-        self.frame_grafico = ctk.CTkFrame(self.main, height=250)
-        self.frame_grafico.pack(fill="both", expand=True, pady=10)
+        # Gráfico moderno
+        self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, height=250)
+        self.frame_grafico.pack(fill="both", expand=True, pady=20)
 
     # ================= AÇÕES ================= #
 
