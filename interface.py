@@ -33,7 +33,6 @@ class StudyApp:
 
     def criar_layout(self):
 
-        # Sidebar
         self.sidebar = ctk.CTkFrame(self.root, width=240, corner_radius=20)
         self.sidebar.pack(side="left", fill="y", padx=20, pady=20)
 
@@ -54,10 +53,8 @@ class StudyApp:
 
         ctk.CTkButton(self.sidebar, text="Adicionar", command=self.adicionar).pack(pady=5, padx=20)
         ctk.CTkButton(self.sidebar, text="Calcular Metas", command=self.calcular).pack(pady=5, padx=20)
-
         ctk.CTkButton(self.sidebar, text="Exportar PDF", command=self.exportar_pdf).pack(pady=40, padx=20)
 
-        # Área principal
         self.main = ctk.CTkFrame(self.root, corner_radius=20)
         self.main.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
@@ -74,11 +71,9 @@ class StudyApp:
         self.kpi_sugestao = ctk.CTkLabel(self.kpi_frame, text="", font=("Arial", 18, "bold"))
         self.kpi_sugestao.pack(side="right", padx=40)
 
-        # Cards
         self.cards_container = ctk.CTkScrollableFrame(self.main, corner_radius=20)
         self.cards_container.pack(fill="both", expand=True)
 
-        # Donut Chart
         self.frame_grafico = ctk.CTkFrame(self.main, corner_radius=20, height=250)
         self.frame_grafico.pack(fill="both", expand=True, pady=20)
 
@@ -92,10 +87,8 @@ class StudyApp:
             return
 
         self.model.adicionar_disciplina(nome, peso)
-
         self.entry_nome.delete(0, "end")
         self.entry_peso.delete(0, "end")
-
         self.atualizar()
 
     def calcular(self):
@@ -136,36 +129,29 @@ class StudyApp:
                 menor_percentual = progresso
                 disciplina_mais_atrasada = nome
 
-            # CARD PREMIUM
             card = ctk.CTkFrame(self.cards_container, corner_radius=20)
-            card.pack(fill="x", padx=25, pady=15)
+            card.pack(fill="x", padx=20, pady=10)
 
-            titulo = ctk.CTkLabel(
-                card,
-                text=nome,
-                font=("Arial", 20, "bold")
-            )
-            titulo.pack(anchor="w", padx=25, pady=(20, 10))
+            titulo = ctk.CTkLabel(card, text=nome, font=("Arial", 18, "bold"))
+            titulo.pack(anchor="w", padx=20, pady=(15, 5))
 
-            barra = ctk.CTkProgressBar(card, height=18, corner_radius=10)
+            barra = ctk.CTkProgressBar(card, height=15)
             barra.set(progresso / 100)
-            barra.pack(fill="x", padx=25, pady=5)
+            barra.pack(fill="x", padx=20, pady=5)
 
             info = ctk.CTkLabel(
                 card,
-                text=f"{dados['concluido']}/{dados['meta']} horas • {int(progresso)}%",
-                font=("Arial", 14)
+                text=f"{dados['concluido']}/{dados['meta']} horas ({int(progresso)}%)"
             )
-            info.pack(anchor="w", padx=25)
+            info.pack(anchor="w", padx=20)
 
             botao = ctk.CTkButton(
                 card,
                 text="Marcar 1 hora",
-                width=140,
-                corner_radius=12,
+                width=120,
                 command=lambda n=nome: self.marcar_hora_card(n)
             )
-            botao.pack(anchor="e", padx=25, pady=20)
+            botao.pack(anchor="e", padx=20, pady=15)
 
         percentual_total = 0
         if total_meta > 0:
@@ -193,7 +179,7 @@ class StudyApp:
                 self.model.resetar_semana()
                 self.atualizar()
 
-    # ================= DONUT CHART ================= #
+    # ================= DONUT CHART SEGURO ================= #
 
     def atualizar_grafico_donut(self):
 
@@ -203,19 +189,29 @@ class StudyApp:
         total_meta = sum(d["meta"] for d in self.model.disciplinas.values())
         total_concluido = sum(d["concluido"] for d in self.model.disciplinas.values())
 
-        restante = total_meta - total_concluido
-
         fig = plt.Figure(figsize=(4, 4))
         ax = fig.add_subplot(111)
 
-        sizes = [total_concluido, restante]
+        if total_meta == 0:
+            ax.text(
+                0.5, 0.5,
+                "Sem dados ainda",
+                horizontalalignment='center',
+                verticalalignment='center',
+                fontsize=14,
+                transform=ax.transAxes
+            )
+            ax.axis("off")
+        else:
+            restante = total_meta - total_concluido
+            sizes = [total_concluido, restante]
 
-        ax.pie(
-            sizes,
-            labels=["Concluído", "Restante"],
-            autopct="%1.0f%%",
-            wedgeprops=dict(width=0.4)
-        )
+            ax.pie(
+                sizes,
+                labels=["Concluído", "Restante"],
+                autopct="%1.0f%%",
+                wedgeprops=dict(width=0.4)
+            )
 
         canvas = FigureCanvasTkAgg(fig, self.frame_grafico)
         canvas.draw()
@@ -238,13 +234,10 @@ class StudyApp:
             lista.append(ListItem(Paragraph(texto, estilos["Normal"])))
 
         elementos.append(ListFlowable(lista))
-
         doc.build(elementos)
 
         messagebox.showinfo("PDF", "Relatório exportado com sucesso!")
 
-
-# ================= EXECUÇÃO ================= #
 
 if __name__ == "__main__":
     root = ctk.CTk()
