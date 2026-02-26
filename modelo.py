@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import Database
 
 
@@ -84,7 +84,6 @@ class StudyModel:
 
         disciplina = self.disciplinas[nome]
 
-        #  Limite de meta
         if disciplina["concluido"] >= disciplina["meta"]:
             return False
 
@@ -98,6 +97,9 @@ class StudyModel:
             disciplina["meta"],
             disciplina["concluido"]
         )
+
+        # Registra estudo diário (para streak real por dias)
+        self.db.registrar_estudo_hoje()
 
         return True
 
@@ -116,7 +118,6 @@ class StudyModel:
         if total_meta > 0:
             percentual = (total_concluido / total_meta) * 100
 
-        # Salva snapshot do ciclo
         self.db.salvar_ciclo(
             data_inicio=self.data_inicio_ciclo,
             data_fim=data_fim,
@@ -127,10 +128,8 @@ class StudyModel:
             disciplinas=self.disciplinas
         )
 
-        # Reinicia ciclo
         self.resetar_horas()
 
-        # Nova data de início
         self.data_inicio_ciclo = datetime.now().strftime("%Y-%m-%d")
 
     # ==============================
@@ -168,17 +167,95 @@ class StudyModel:
         return min(percentual, 100)
 
     # ==============================
-    # HISTÓRICO 
+    # STREAK REAL POR DIAS
+    # ==============================
+
+    def streak_atual(self):
+
+        datas = self.db.obter_datas_estudadas()
+
+        if not datas:
+            return 0
+
+        datas = sorted(datas)
+        datas_convertidas = [
+            datetime.strptime(d, "%Y-%m-%d").date()
+            for d in datas
+        ]
+
+        hoje = datetime.now().date()
+        streak = 0
+        dia_verificando = hoje
+
+        while dia_verificando in datas_convertidas:
+            streak += 1
+            dia_verificando -= timedelta(days=1)
+
+        return streak
+
+    def melhor_streak(self):
+
+        datas = self.db.obter_datas_estudadas()
+
+        if not datas:
+            return 0
+
+        datas = sorted(datas)
+        datas_convertidas = [
+            datetime.strptime(d, "%Y-%m-%d").date()
+            for d in datas
+        ]
+
+        melhor = 0
+        atual = 1
+
+        for i in range(1, len(datas_convertidas)):
+            if datas_convertidas[i] == datas_convertidas[i - 1] + timedelta(days=1):
+                atual += 1
+            else:
+                melhor = max(melhor, atual)
+                atual = 1
+
+        melhor = max(melhor, atual)
+
+        return melhor
+
+    # ==============================
+    # CONSISTÊNCIA SEMANAL
+    # ==============================
+
+    def consistencia_semanal(self):
+
+        inicio = datetime.strptime(
+            self.data_inicio_ciclo, "%Y-%m-%d"
+        ).date()
+
+        hoje = datetime.now().date()
+
+        dias_estudados = self.db.obter_dias_estudados_intervalo(
+            inicio.strftime("%Y-%m-%d"),
+            hoje.strftime("%Y-%m-%d")
+        )
+
+        percentual = (dias_estudados / 7) * 100
+        return min(int(percentual), 100)
+
+    # ==============================
+    # MÉTODOS COMPATÍVEIS COM INTERFACE
+    # ==============================
+
+    def calcular_streak_global(self):
+        return self.streak_atual()
+
+    def calcular_consistencia_semanal(self):
+        return self.consistencia_semanal()
+
+    # ==============================
+    # HISTÓRICO
     # ==============================
 
     def obter_historico(self):
-        """
-        Retorna lista de ciclos salvos
-        """
         return self.db.listar_ciclos()
 
     def obter_disciplinas_do_ciclo(self, ciclo_id):
-        """
-        Retorna disciplinas de um ciclo específico
-        """
         return self.db.carregar_disciplinas_do_ciclo(ciclo_id)

@@ -1,10 +1,29 @@
 import sqlite3
+import os
+import sys
+from datetime import datetime
+
+
+def caminho_banco():
+    """
+    Garante que o banco funcione corretamente
+    tanto no modo desenvolvimento (.py)
+    quanto no executável (.exe)
+    """
+    if getattr(sys, 'frozen', False):
+        # Quando estiver rodando como .exe
+        pasta = os.path.dirname(sys.executable)
+    else:
+        # Quando estiver rodando como script Python
+        pasta = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(pasta, "estudos.db")
 
 
 class Database:
 
     def __init__(self):
-        self.conn = sqlite3.connect("estudos.db")
+        self.conn = sqlite3.connect(caminho_banco())
         self.conn.row_factory = sqlite3.Row
         self.criar_tabelas()
 
@@ -15,7 +34,6 @@ class Database:
     def criar_tabelas(self):
         cursor = self.conn.cursor()
 
-        # Tabela de disciplinas
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS disciplinas (
             nome TEXT PRIMARY KEY,
@@ -25,7 +43,6 @@ class Database:
         )
         """)
 
-        # Tabela de configuração (horas por dia)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS configuracoes (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -33,7 +50,6 @@ class Database:
         )
         """)
 
-        # Tabela de ciclos (histórico)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS ciclos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +62,6 @@ class Database:
         )
         """)
 
-        # Tabela detalhada de disciplinas por ciclo
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS ciclo_disciplinas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +70,14 @@ class Database:
             meta INTEGER,
             concluido INTEGER,
             FOREIGN KEY (ciclo_id) REFERENCES ciclos(id)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS registro_diario (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT UNIQUE,
+            horas INTEGER DEFAULT 0
         )
         """)
 
@@ -113,7 +136,7 @@ class Database:
         self.conn.commit()
 
     # ==============================
-    # CONFIGURAÇÃO (HORAS POR DIA)
+    # CONFIGURAÇÃO
     # ==============================
 
     def salvar_horas_dia(self, horas):
@@ -134,6 +157,44 @@ class Database:
         if row:
             return row["horas_dia"]
         return 0
+
+    # ==============================
+    # REGISTRO DIÁRIO (STREAK)
+    # ==============================
+
+    def registrar_estudo_hoje(self):
+        hoje = datetime.now().strftime("%Y-%m-%d")
+        cursor = self.conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO registro_diario (data, horas)
+            VALUES (?, 1)
+            ON CONFLICT(data)
+            DO UPDATE SET horas = horas + 1
+        """, (hoje,))
+
+        self.conn.commit()
+
+    def obter_datas_estudadas(self):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT data FROM registro_diario
+            WHERE horas > 0
+            ORDER BY data ASC
+        """)
+        rows = cursor.fetchall()
+        return [row["data"] for row in rows]
+
+    def obter_dias_estudados_intervalo(self, data_inicio, data_fim):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) as total FROM registro_diario
+            WHERE data BETWEEN ? AND ?
+            AND horas > 0
+        """, (data_inicio, data_fim))
+
+        row = cursor.fetchone()
+        return row["total"] if row else 0
 
     # ==============================
     # HISTÓRICO DE CICLOS
